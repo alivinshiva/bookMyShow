@@ -26,7 +26,7 @@ jobs:
           
           ssh-keyscan -H 13.203.102.221 >> ~/.ssh/known_hosts
           
-          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ubuntu@13.203.102.221 << 'EOF'
+          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ubuntu@13.203.102.221 -t "<< 'EOF'"
             cd /home/ubuntu/bookMyShow
             git pull origin main
             pnpm install
