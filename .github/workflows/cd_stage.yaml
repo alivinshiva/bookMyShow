@@ -14,15 +14,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Deploy to EC2
+      - name: Setup SSH Key
         run: |
-          echo "${{ secrets.SSH_PVT_KEY }}" > ssh_key
-          chmod 600 ssh_key
-
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PVT_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 13.203.102.221 >> ~/.ssh/known_hosts
 
-          ssh -i ssh_key -o StrictHostKeyChecking=no ubuntu@13.203.102.221 << 'EOF'
+      - name: Deploy to EC2
+        run: |
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@13.203.102.221 << 'EOF'
             cd /home/ubuntu/bookMyShow
             git pull origin main
             pnpm install
