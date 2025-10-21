@@ -1,0 +1,20 @@
+name: Deploy to Staging
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploying:
+    name: Deploy Application to Staging Environment
+
+    steps:
+      - name: SSH to Server
+      - runs: |
+          echo ${{secrets.SSH_PVT_KEY}} &> ~/ssh_key
+          ssh -i ~/ssh_key ubuntu@13.203.102.221
+          cd /home/ubuntu/bookMyShow
+          git pull 
+          pnpm install
+          pnpm run build
+          pm2 restart all
