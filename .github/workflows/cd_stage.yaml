@@ -1,37 +1,18 @@
-name: Deploy to Staging
-
+name: Deploy to staging
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  deploying:
+  redeploy_everything:
     runs-on: ubuntu-latest
-    name: Deploy Application to Staging Environment
-
+    name: Deploying everything to the staging cluster
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup SSH and Deploy
-        run: |
-          echo "${{ secrets.SSH_PVT_KEY }}" > ~/ssh_key
-          chmod 600 ~/ssh_key
-          
-          mkdir -p ~/.ssh
+      - run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
+          mkdir -p /home/runner/.ssh
+          ls /home/runner/.ssh
+          touch /home/runner/.ssh/known_hosts
+          echo "${{ secrets.KNOWN_HOST }}" &> /home/runner/.ssh/known_hosts
           chmod 700 /home/runner/ssh_key
-          touch ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-          
-          ssh-keyscan -H 13.203.102.221 >> ~/.ssh/known_hosts
-
-          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ubuntu@13.203.102.221 << 'EOF'
-            cd /home/ubuntu/bookMyShow
-            git pull origin main
-            pnpm install
-            pnpm run build
-            pm2 restart all
-          EOF
-          
-          rm -f ~/ssh_key
+          ssh -i ~/ssh_key root@64.227.147.124 -t "cd week-25-ci-next-app/ && git pull origin main && export PATH=/root/.nvm/versions/node/v22.13.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin && npm install -g pnpm && pnpm install && pnpm run build && pm2 restart fe-sever && pm2 restart http-sever && pm2 restart ws-sever"
