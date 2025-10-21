@@ -5,12 +5,13 @@ on:
       - main
 
 jobs:
+  uses: ubuntu-latest
   deploying:
     name: Deploy Application to Staging Environment
 
     steps:
       - name: SSH to Server
-      - runs: |
+      - run: |
           echo ${{secrets.SSH_PVT_KEY}} &> ~/ssh_key
           ssh -i ~/ssh_key ubuntu@13.203.102.221
           cd /home/ubuntu/bookMyShow
