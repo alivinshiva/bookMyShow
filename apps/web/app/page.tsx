@@ -7,7 +7,6 @@ export default async function Home() {
   return (
     <div>
       <h1>Welcome to BookMyShow Web App!</h1>
-      <p>This is the Dev environment.</p>
       <>
         <p>First user in database: {user?.username}</p>
         <p>Password: {user?.password}</p>
