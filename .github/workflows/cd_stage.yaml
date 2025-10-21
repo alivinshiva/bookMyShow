@@ -1,18 +1,49 @@
-name: Deploy to staging
+name: Deploy to Staging
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  redeploy_everything:
+  deploy:
     runs-on: ubuntu-latest
-    name: Deploying everything to the staging cluster
+    name: Deploy BookMyShow Monorepo to EC2
+
     steps:
-      - run: |
-          echo "${{ secrets.SSH_PVT_KEY }}" &> ~/ssh_key
-          mkdir -p /home/runner/.ssh
-          ls /home/runner/.ssh
-          touch /home/runner/.ssh/known_hosts
-          echo "${{ secrets.KNOWN_HOST }}" &> /home/runner/.ssh/known_hosts
-          chmod 700 /home/runner/ssh_key
-          ssh -i ~/ssh_key ubuntu@13.203.102.221 -t "cd week-25-ci-next-app/ && git pull origin main && export PATH=/root/.nvm/versions/node/v22.13.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin && npm install -g pnpm && pnpm install && pnpm run build && pm2 restart fe-sever && pm2 restart http-sever && pm2 restart ws-sever"
+      - name: Setup SSH Key and Known Hosts
+        run: |
+          echo "${{ secrets.SSH_PVT_KEY }}" > ~/ssh_key
+          chmod 600 ~/ssh_key
+
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KNOWN_HOST }}" > ~/.ssh/known_hosts
+
+      - name: Deploy Application
+        run: |
+          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ubuntu@13.203.102.221 << 'EOF'
+            set -e
+            cd /home/ubuntu/bookMyShow
+
+            echo "📦 Pulling latest code..."
+            git pull origin main
+
+            echo "🧰 Ensuring pnpm and pm2 are available..."
+            export PATH=$PATH:/home/ubuntu/.nvm/versions/node/v22.13.1/bin
+            if ! command -v pnpm &> /dev/null; then
+              npm install -g pnpm
+            fi
+            if ! command -v pm2 &> /dev/null; then
+              npm install -g pm2
+            fi
+
+            echo "📂 Installing dependencies..."
+            pnpm install
+
+            echo "🏗️ Building monorepo..."
+            pnpm run build
+
+            echo "🚀 Restarting all PM2 processes..."
+            pm2 restart all || pm2 start ecosystem.config.js
+
+            echo "✅ Deployment complete!"
+          EOF
