@@ -1,0 +1,49 @@
+name: Deploy to Staging
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy BookMyShow Monorepo to EC2
+
+    steps:
+      - name: Setup SSH Key and Known Hosts
+        run: |
+          echo "${{ secrets.SSH_PVT_KEY }}" > ~/ssh_key
+          chmod 600 ~/ssh_key
+
+          mkdir -p ~/.ssh
+          echo "${{ secrets.KNOWN_HOST }}" > ~/.ssh/known_hosts
+
+      - name: Deploy Application
+        run: |
+          ssh -i ~/ssh_key -o StrictHostKeyChecking=no ubuntu@3.7.73.221 << 'EOF'
+            set -e
+            cd /home/ubuntu/bookMyShow
+
+            echo "📦 Pulling latest code..."
+            git pull origin production
+
+            echo "🧰 Ensuring pnpm and pm2 are available..."
+            export PATH=$PATH:/home/ubuntu/.nvm/versions/node/v22.13.1/bin
+            if ! command -v pnpm &> /dev/null; then
+              npm install -g pnpm
+            fi
+            if ! command -v pm2 &> /dev/null; then
+              npm install -g pm2
+            fi
+
+            echo "📂 Installing dependencies..."
+            pnpm install
+
+            echo "🏗️ Building monorepo..."
+            pnpm run build
+
+            echo "🚀 Restarting all PM2 processes..."
+            pm2 restart all || pm2 start ecosystem.config.js
+
+            echo "✅ Deployment complete!"
+          EOF
