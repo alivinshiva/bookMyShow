@@ -5,8 +5,8 @@ on:
       - main
 
 jobs:
-  uses: ubuntu-latest
   deploying:
+    runs-on: ubuntu-latest
     name: Deploy Application to Staging Environment
 
     steps:
